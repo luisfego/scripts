@@ -2,10 +2,10 @@
 
 if [ -z "$1" ] || [ -z "$2" ]; then
 	cat <<-EOF
-		usage: foliadora -f inputDir -o outputDir [OPTIONS]
+		usage: foliadora -i inputDir -o outputDir [OPTIONS]
 
 		REQUIRED
-		    -f, --files 		The directory containing th PDF files to add numbers (required).
+		    -i, --input 		The directory containing th PDF files to add numbers (required).
 		    -o, --output 		The directory to output the resulting files. If the dir is not found, then it will be automatically created (required).
 
 		OPTIONS
@@ -40,7 +40,7 @@ else
 	key="$1"
 
 	case $key in
-		-f|--files)
+		-i|--input)
 		files="$2"
 		shift # past argument
 		;;
@@ -97,7 +97,7 @@ else
 
 	# Check for output dir
 	if [ -z "$out" ]; then
-		echo "ERROR: You must provide an input dir."
+		echo "ERROR: You must provide an output dir."
 		exit
 	elif [ -d "$out" ]; then 
 		:
@@ -106,15 +106,11 @@ else
 		echo "Creating dir $out"
 	fi
 
-	if [ -z "$out" ]; then
-		echo "ERROR: You must provide an output dir."
-		exit
-	fi
-
 	# Do the magic
 	echo $1
 	for i in $files/*.pdf; do
-		echo Adding page numbers to $(basename "$i")...
+		echo Adding page numbers to $(basename "$i")
+		echo Starting with offset $offset...
 		sejda-console setheaderfooter -b $offset -j $overwrite -f "$i" -t $font -c $color -d $size -x $x -y $y -l "$label" -o $out > /dev/null
 
 		plus=$(strings < "$i" | sed -n 's|.*/Count -\{0,1\}\([0-9]\{1,\}\).*|\1|p' | sort -rn | head -n 1)
