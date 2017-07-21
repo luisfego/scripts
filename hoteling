@@ -1,0 +1,144 @@
+#!/usr/bin/env python
+
+import sys, argparse, logging, requests, datetime
+
+# Global variables for post data construction
+qcd = datetime.datetime.now().strftime("%d/%m/%Y %I:%M:%S %P").replace("pm", "p.m.").replace("am", "a.m.")
+hidStartDate = datetime.datetime.now().strftime("%d/%m/%Y")
+data = {
+	'qcd': qcd,
+	'el':'EN',
+	'eid':'91135948',
+	'cid':'283',
+	'flid':'48',
+	'fldc':'Floor+2',
+	'bid':'15',
+	'en':'LUIS+FELIPE+GONZALEZ+HERNANDEZ',
+	'cn':'Kiosk+10',
+	'tor':'90000',
+	'gpc':'False',
+	'akc':'False',
+	'lcid':'61',
+	'aid':'0',
+	'ctv':'True',
+}
+
+# Main procedure
+def main(args, loglevel):
+
+	logging.basicConfig(format="%(levelname)s: %(message)s", level=loglevel)
+
+	logging.debug("ACTION: {}".format(args.action))
+	logging.debug("WORKSPACE: {}".format(args.workspace))
+	logging.debug("Workspace ID: {}".format(getWorkspaceId(args.workspace)))
+
+	options = {
+		"checkin": checkin,
+		"checkout": checkout,
+		"reserve": reserve,
+		"cancel": cancel
+	}
+
+	data["hidWorkspaceId"] = getWorkspaceId(args.workspace)
+	data["hidWorkspaceDesc"] = args.workspace
+
+	# log in
+	# endpoint = "http://mx-dfhtl00:81/modules/login/login.aspx?cid=283"
+	# r = requests.post(endpoint, data = data)
+
+	# logging.debug(r.text)
+
+	options[args.action](args.workspace)
+
+def getWorkspaceId(workspace):
+	workspaceIds = {
+		"2140F": 3092,
+		"2141F": 3098,
+		"2141H": 3100,
+		"2141I": 3101,
+		"2141J": 3102,
+		"2335B": 3161,
+		"2335C": 3162,
+		"2335D": 3163,
+		"2335E STAFF": 31,
+		"2335F": 3165,
+		"2335G": 3166,
+		"2335H": 3167,
+		"2335I": 3168,
+		"2335J": 3169,
+		"2336A": 3170
+	}
+	return workspaceIds[workspace.upper()]
+
+def checkin(workspace):
+	logging.info("Checking in with workspace {}...".format(workspace))
+
+	postData = data
+
+	postData['hidQueueId'] = '0'
+	postData['hidStartDate'] =  hidStartDate
+	postData['hidStartTime'] = '15:00'
+	postData['hidEndTime' ] = '20:00'
+	postData['hidEndDate' ] =  hidStartDate
+	postData['hidVisitor' ] = '0'
+	postData['hidExtensionId' ] = '10753'
+	postData['hidPortId'] = '0'
+	postData['hidExtension' ] = '6482'
+	postData['hidGroupPage' ] =  '0'
+	postData['hidGroupItem' ] = '0'
+	postData['hidWorkspacePage' ] = '0'
+	postData['hidWorkspaceItem'] = '3'
+
+	endpoint = "http://mx-dfhtl00:81/modules/checkin/saveconfirm.aspx"
+
+	try:
+		r = requests.post(endpoint, params = postData);
+
+		if (r.status_code == 200):
+			logging.info("Request sent succesfully")
+		else:
+			logging.error("Server responded with status code {}".format(r.status_code))
+
+	except Exception as e:
+		logging.error("Unexpected error. {}".format(e))
+
+def checkout(workspace):
+	return
+
+def reserve(workspace):
+	return
+
+def cancel(workspace):
+	return
+
+# Standard boilerplate to call the main() function to begin
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(
+					description = "Command line api for the PwC Mexico hoteling system.",
+					fromfile_prefix_chars = '@' )
+
+	parser.add_argument(
+					"action",
+					help = "checkin | checkout | reserve | cancel",
+					metavar = "ACTION")
+
+  	parser.add_argument(
+					"workspace",
+					help = "Workspace numer (e.g. 2141H)",
+					metavar = "WORKSPACE")
+
+	parser.add_argument(
+					"-v",
+					"--verbose",
+					help="increase output verbosity",
+					action="store_true")
+
+	args = parser.parse_args()
+
+	# Setup logging
+	if args.verbose:
+		loglevel = logging.DEBUG
+	else:
+		loglevel = logging.INFO
+
+	main(args, loglevel)
